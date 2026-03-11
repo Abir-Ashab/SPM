@@ -1,6 +1,8 @@
 import { initialize } from './src/database';
 import { config } from 'dotenv';
 import express from "express";
+import path from "path";
+import { fileURLToPath } from 'url';
 import globalErrorHandler from "./src/middlewares/globalErrorHandler";
 import notFound from "./src/middlewares/notFound";
 import { UserRoutes } from "./src/routes/user.route";
@@ -15,10 +17,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 config(); 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Serve uploaded files statically from workspace root uploads folder
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {

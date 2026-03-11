@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import EnhancedChat from '../chat/EnhancedChat';
 import { FiMessageCircle } from 'react-icons/fi';
 
@@ -6,18 +5,8 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Product Chatbot
-          </h1>
-          <p className="text-gray-600">
-            Ask questions about products, get recommendations, and place orders through natural conversation.
-          </p>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Chat Area */}
           <div className="lg:col-span-3">
             <div className="h-[600px]">
               <EnhancedChat 
@@ -27,9 +16,7 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Chat Features Info */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
               <h3 className="font-semibold text-blue-900 mb-3">
                 <FiMessageCircle className="inline w-5 h-5 mr-2" />
@@ -61,17 +48,6 @@ export default function ChatPage() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Example Questions */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-3">Try asking:</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• "Show me laptops under $1000"</li>
-                <li>• "I need a red backpack"</li>
-                <li>• "What's available in electronics?"</li>
-                <li>• "Help me find running shoes"</li>
-              </ul>
             </div>
           </div>
         </div>

@@ -9,8 +9,6 @@ from PIL import Image
 from io import BytesIO
 import logging
 
-from langchain_community.vectorstores import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
@@ -42,15 +40,27 @@ if not GEMINI_API_KEY:
 # Initialize Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Initialize embedding model for semantic search
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# Initialize ChromaDB with ONNX embeddings (NO PyTorch - works with Python 3.13!)
+import chromadb
+from chromadb.utils import embedding_functions
 
-# Initialize Chroma vector store for products
-product_vector_store = Chroma(
-    collection_name="products",
-    embedding_function=embeddings,
-    persist_directory=os.getenv("CHROMA_DB_PATH", "./chroma_db"),
-)
+chroma_client = chromadb.PersistentClient(path=os.getenv("CHROMA_DB_PATH", "./chroma_db"))
+
+# Use ONNX embedding function - this uses ONNX Runtime instead of PyTorch
+onnx_ef = embedding_functions.ONNXMiniLM_L6_V2()
+
+product_collection = None
+
+# Get or create collection with ONNX embeddings
+try:
+    product_collection = chroma_client.get_or_create_collection(
+        name="products",
+        embedding_function=onnx_ef
+    )
+    logger.info("ChromaDB collection initialized successfully with ONNX embeddings")
+except Exception as e:
+    logger.error(f"Failed to initialize ChromaDB: {e}")
+    product_collection = None
 
 # Request/Response Models
 class Product(BaseModel):
@@ -136,20 +146,44 @@ Return as JSON:
 def semantic_product_search(query: str, top_k: int = 5) -> List[Dict]:
     """Search products using semantic similarity."""
     try:
-        results = product_vector_store.similarity_search_with_score(query, k=top_k)
+        if product_collection is None:
+            logger.error("ChromaDB collection not initialized")
+            return []
+        
+        # Query the collection - ONNX will auto-generate query embeddings
+        results = product_collection.query(
+            query_texts=[query],
+            n_results=top_k
+        )
+        
         products = []
-        for doc, score in results:
-            products.append({
-                "id": doc.metadata.get("id"),
-                "name": doc.metadata.get("name"),
-                "description": doc.page_content,
-                "category": doc.metadata.get("category"),
-                "price": doc.metadata.get("price"),
-                "similarity_score": float(1 - score)  # Convert distance to similarity
-            })
+        if results and results['ids'] and len(results['ids'][0]) > 0:
+            for i in range(len(results['ids'][0])):
+                metadata = results['metadatas'][0][i] if results['metadatas'] else {}
+                document = results['documents'][0][i] if results['documents'] else ""
+                distance = results['distances'][0][i] if results['distances'] else 1.0
+                similarity_score = float(1 - distance)
+                
+                # Log for debugging
+                logger.info(f"Product: {metadata.get('name')}, Distance: {distance:.4f}, Similarity: {similarity_score:.4f}")
+                
+                # Only include products with reasonable similarity (threshold: 0.3)
+                if similarity_score > 0.3:
+                    products.append({
+                        "id": metadata.get("product_id"),
+                        "name": metadata.get("name"),
+                        "description": document,
+                        "category": metadata.get("category"),
+                        "price": metadata.get("price"),
+                        "similarity_score": similarity_score
+                    })
+        
+        # Sort by similarity score descending
+        products.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
         return products
     except Exception as e:
-        logger.error(f"Semantic search failed: {e}")
+        logger.error(f"Semantic search failed: {e}", exc_info=True)
         return []
 
 def image_based_search(image_url: str, top_k: int = 5) -> List[Dict]:
@@ -178,28 +212,33 @@ def generate_chatbot_response(message: str, intent_data: Dict, relevant_products
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         
+        if not relevant_products:
+            return "I couldn't find any products matching your search. Could you please provide more details about what you're looking for?"
+        
         products_info = "\n".join([
-            f"- {p['name']}: {p['description']} (${p['price']})"
+            f"- {p['name']}: {p['description'][:150]}... (${p['price']}) [Relevance: {p.get('similarity_score', 0):.2f}]"
             for p in relevant_products[:3]
-        ]) if relevant_products else "No products found"
+        ])
         
         prompt = f"""
 You are a helpful product sales assistant. 
 
-Customer message: "{message}"
-Intent: {intent_data.get('intent', 'other')}
-Extracted entities: {intent_data.get('products', [])}
+Customer searched for: "{message}"
+Intent: {intent_data.get('intent', 'inquiry')}
 
-Relevant products from catalog:
+Found {len(relevant_products)} relevant product(s):
 {products_info}
 
-Generate a helpful, friendly response that:
-1. Acknowledges the customer's request
-2. Provides relevant product information
-3. Asks clarifying questions if needed
-4. Guides them toward making an order if appropriate
+Generate a natural, conversational response that:
+1. Directly answers what the customer asked about
+2. Presents the most relevant products (highest relevance score first)
+3. Briefly describes why these products match their search
+4. Asks if they want more details or want to order
 
-Keep the response conversational and helpful.
+IMPORTANT: Only mention products that are actually relevant to the customer's query "{message}". 
+Do NOT just list all products - focus on the ones with highest relevance scores.
+
+Keep the response concise (2-3 sentences) and helpful.
 """
         
         response = model.generate_content(prompt)
@@ -224,44 +263,66 @@ async def health_check():
 async def index_product(product: Product):
     """Index a product in the vector store."""
     try:
-        from langchain_core.documents import Document
+        if product_collection is None:
+            raise HTTPException(status_code=503, detail="ChromaDB not initialized")
         
-        # Create document with product info
+        logger.info(f"Starting indexing for product: {product.name}")
+        
+        # Create document content
         doc_content = f"{product.name}. {product.description}"
+        
+        # Prepare metadata (ChromaDB requires all values to be strings, ints, floats, or bools)
         metadata = {
-            "id": product.id,
+            "product_id": product.id,
             "name": product.name,
             "category": product.category,
-            "price": product.price,
+            "price": float(product.price),
         }
         
-        doc = Document(page_content=doc_content, metadata=metadata)
-        product_vector_store.add_documents([doc])
+        logger.info(f"Adding to ChromaDB collection with ONNX embeddings: {product.name}")
         
-        logger.info(f"Indexed product: {product.name}")
+        # Add to collection - ONNX embedding function will auto-generate embeddings
+        product_collection.add(
+            documents=[doc_content],
+            metadatas=[metadata],
+            ids=[product.id]
+        )
+        
+        logger.info(f"Successfully indexed product: {product.name}")
         return {"message": "Product indexed successfully", "productId": product.id}
     except Exception as e:
-        logger.error(f"Product indexing failed: {e}")
+        logger.error(f"Product indexing failed for {product.name}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to index product: {str(e)}")
 
 @app.post("/products/index_batch")
 async def index_products_batch(products: List[Product]):
     """Index multiple products at once."""
     try:
-        from langchain_core.documents import Document
+        if product_collection is None:
+            raise HTTPException(status_code=503, detail="ChromaDB not initialized")
         
-        docs = []
+        documents = []
+        metadatas = []
+        ids = []
+        
         for product in products:
             doc_content = f"{product.name}. {product.description}"
             metadata = {
-                "id": product.id,
+                "product_id": product.id,
                 "name": product.name,
                 "category": product.category,
-                "price": product.price,
+                "price": float(product.price),
             }
-            docs.append(Document(page_content=doc_content, metadata=metadata))
+            documents.append(doc_content)
+            metadatas.append(metadata)
+            ids.append(product.id)
         
-        product_vector_store.add_documents(docs)
+        # ONNX will auto-generate embeddings
+        product_collection.add(
+            documents=documents,
+            metadatas=metadatas,
+            ids=ids
+        )
         
         logger.info(f"Indexed {len(products)} products")
         return {"message": f"Indexed {len(products)} products successfully"}

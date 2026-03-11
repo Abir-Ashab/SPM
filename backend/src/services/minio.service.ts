@@ -106,18 +106,21 @@ export class MinIOService {
         }
       );
 
-      // Generate presigned URL for file access
-      const url = await this.client.presignedGetObject(
-        this.bucketName,
-        objectPath,
-        24 * 60 * 60 // 24 hours expiry
-      );
+      // Generate public URL for MinIO (for browser-based MinIO on localhost)
+      const endPoint = process.env.MINIO_ENDPOINT || '127.0.0.1';
+      const port = process.env.MINIO_PORT || '9002';
+      const useSSL = process.env.MINIO_USE_SSL === 'true';
+      const protocol = useSSL ? 'https' : 'http';
+      
+      // Direct URL format for MinIO
+      const url = `${protocol}://${endPoint}:${port}/${this.bucketName}/${objectPath}`;
 
       console.log('File uploaded to MinIO:', {
         originalName: file.originalname,
         filename,
         objectPath,
-        size: file.size
+        size: file.size,
+        url
       });
 
       return {
@@ -126,7 +129,7 @@ export class MinIOService {
         mimetype: file.mimetype,
         size: file.size,
         path: objectPath, // MinIO object path
-        url: url // Presigned URL for access
+        url: url // Public URL for access
       };
 
     } catch (error) {

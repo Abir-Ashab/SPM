@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiSend, FiFile, FiMessageCircle, FiUser, FiLoader, FiRefreshCw } from 'react-icons/fi';
+import { FiSend, FiFile, FiMessageCircle, FiUser, FiLoader, FiRefreshCw, FiImage, FiUpload, FiSearch, FiZap, FiX } from 'react-icons/fi';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
+import { productService, type Product } from '../../services/product';
+import api from '../../services/api';
 
 interface Message {
   id: string;
@@ -11,6 +13,7 @@ interface Message {
   timestamp: Date;
   isTyping?: boolean;
   images?: string[]; 
+  products?: Product[];
 }
 
 interface Document {
@@ -28,9 +31,13 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [chatMode, setChatMode] = useState<'all' | 'specific'>('all');
+  const [searchMode, setSearchMode] = useState<'semantic' | 'image'>('semantic');
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,23 +47,63 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    if (selectedDocuments.length > 0) {
-      setChatMode('specific');
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
     }
-  }, [selectedDocuments]);
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await api.post('/products/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        const uploadedUrl = response.data.data.url;
+        setUploadedImageUrl(uploadedUrl);
+        toast.success('Image uploaded! Click Search to find similar products');
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      toast.error('Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (searchMode === 'semantic' && !input.trim()) {
+      toast.error('Please enter a search query');
+      return;
+    }
+    if (searchMode === 'image' && !uploadedImageUrl && !input.trim()) {
+      toast.error('Please upload an image or provide an image URL');
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      text: input.trim(),
+      text: searchMode === 'image' && uploadedImageUrl ? 'Searching for products from image...' : input.trim(),
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput('');
     setIsLoading(true);
 
@@ -71,37 +118,39 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
     setMessages(prev => [...prev, typingMessage]);
 
     try {
-      const token = localStorage.getItem('token');
-      const payload: any = { question: userMessage.text };
-      
-      // Add document filtering for specific mode
-      if (chatMode === 'specific' && selectedDocuments.length > 0) {
-        payload.documentIds = selectedDocuments.map(doc => doc._id);
-      }
+      let botResponse: Message;
 
-      const response = await axios.post(
-        'http://localhost:3000/api/rag/chat',
-        payload,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      if (searchMode === 'semantic' && currentInput) {
+        // Semantic product search
+        const products = await productService.semanticSearch(currentInput, 10);
+        botResponse = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: products.length > 0 
+            ? `Found ${products.length} products matching "${currentInput}":\n\n${products.map(p => `**${p.name}** - $${p.price}\n${p.description.substring(0, 100)}...`).join('\n\n')}`
+            : `No products found matching "${currentInput}". Try different keywords.`,
+          timestamp: new Date(),
+          products: products
+        };
+      } else if (searchMode === 'image') {
+        // Image-based product search
+        const imageUrl = uploadedImageUrl || currentInput;
+        const products = await productService.imageSearch(imageUrl, 10);
+        botResponse = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: products.length > 0
+            ? `Found ${products.length} similar products based on the image:`
+            : 'No similar products found. Try a different image.',
+          timestamp: new Date(),
+          products: products
+        };
+        setUploadedImageUrl(''); // Clear uploaded image after search
+      }
 
       setMessages(prev => {
         const withoutTyping = prev.filter(msg => msg.id !== 'typing');
-        return [
-          ...withoutTyping,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'bot',
-            text: response.data.response.answer || 'I apologize, but I couldn\'t generate a response.',
-            timestamp: new Date(),
-            images: response.data.response.images || [] 
-          }
-        ];
+        return [...withoutTyping, botResponse];
       });
 
     } catch (error: any) {
@@ -113,7 +162,7 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
           {
             id: (Date.now() + 1).toString(),
             sender: 'bot',
-            text: 'I apologize, but I encountered an error while processing your question. Please try again.',
+            text: 'I apologize, but I encountered an error while processing your request. Please try again.',
             timestamp: new Date()
           }
         ];
@@ -142,54 +191,61 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
   };
 
   const suggestedQuestions = [
-    "Show me laptops under $1000",
-    "I need a red backpack",
-    "What's available in electronics?",
-    "Help me find running shoes"
+    "Show me bags",
+    "I need a camera under $500",
+    "What's available in clothing?",
+    "Help me find perfumes"
   ];
 
-  return (
-    <div className={`flex flex-col h-full bg-white rounded-xl shadow-lg border border-gray-200 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <FiMessageCircle className="w-5 h-5 text-blue-600" />
+  const renderProductResults = (products: Product[]) => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        {products.map((product) => (
+          <div 
+            key={product._id} 
+            onClick={() => setSelectedProduct(product)}
+            className="border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-all cursor-pointer bg-white hover:border-blue-400 transform hover:scale-[1.02]"
+          >
+            {product.imageUrl && (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="w-full h-32 object-cover rounded-md mb-2"
+              />
+            )}
+            <h4 className="font-semibold text-gray-900 text-sm mb-1">{product.name}</h4>
+            <p className="text-xs text-gray-600 mb-2 line-clamp-2">{product.description}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-blue-600 font-bold">${product.price}</span>
+              <span className="text-xs text-gray-500">{product.stock} in stock</span>
+            </div>
+            <div className="mt-2 text-xs text-blue-500 font-medium flex items-center gap-1">
+              <FiSearch className="w-3 h-3" />
+              Click for details
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">Product Assistant</h3>
-            <p className="text-sm text-gray-600">
-              Ask about products, get recommendations, place orders
-            </p>
-          </div>
-        </div>
+        ))}
+      </div>
+    );
+  };
 
-        <div className="flex items-center gap-2">
-          {/* Chat Mode Toggle */}
-          <div className="flex bg-white rounded-lg p-1 border">
-            <button
-              onClick={() => setChatMode('all')}
-              className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
-                chatMode === 'all'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              All Docs
-            </button>
-            <button
-              onClick={() => setChatMode('specific')}
-              disabled={selectedDocuments.length === 0}
-              className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
-                chatMode === 'specific'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : selectedDocuments.length === 0
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              Selected
-            </button>
+  return (
+    <>
+    <div className={`flex flex-col bg-white rounded-xl shadow-lg border border-gray-200 ${className}`} style={{ height: 'calc(100vh - 2rem)' }}>
+      {/* Header */}
+      <div className="flex flex-col gap-3 p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FiMessageCircle className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Product Assistant</h3>
+              <p className="text-sm text-gray-600">
+                {searchMode === 'semantic' ? 'Search products by description' : 'Search by image'}
+                 'Search products by image'
+              </p>
+            </div>
           </div>
 
           <button
@@ -198,6 +254,32 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
             title="Clear chat"
           >
             <FiRefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Search Mode Selector */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSearchMode('semantic')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              searchMode === 'semantic'
+                ? 'bg-green-500 text-white shadow-md'
+                : 'bg-white text-gray-600 hover:bg-green-50'
+            }`}
+          >
+            <FiZap className="w-4 h-4" />
+            Semantic
+          </button>
+          <button
+            onClick={() => setSearchMode('image')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              searchMode === 'image'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'bg-white text-gray-600 hover:bg-purple-50'
+            }`}
+          >
+            <FiImage className="w-4 h-4" />
+            Image
           </button>
         </div>
       </div>
@@ -209,8 +291,8 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-4">
               <FiMessageCircle className="w-8 h-8 text-blue-600" />
             </div>
-            <h4 className="text-lg font-medium text-gray-900 mb-2">Start shopping</h4>
-            <p className="text-gray-600 mb-6">Ask about products and get personalized recommendations.</p>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Search products</h4>
+            <p className="text-gray-600 mb-6">Use semantic search to find products by description or upload an image.</p>
             
             {/* Suggested Questions */}
             <div className="space-y-2">
@@ -299,9 +381,16 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
                         </div>
                       )}
                     </div>
-
                   )}
                 </div>
+                
+                {/* Product Results */}
+                {message.products && message.products.length > 0 && (
+                  <div className="mt-3">
+                    {renderProductResults(message.products)}
+                  </div>
+                )}
+
                 {!message.isTyping && (
                   <p className={`text-xs mt-1 text-gray-500 ${
                     message.sender === 'user' ? 'text-right' : ''
@@ -318,6 +407,44 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
 
       {/* Input Area */}
       <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        {/* Image Upload for Image Search Mode */}
+        {searchMode === 'image' && (
+          <div className="mb-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-purple-500 transition-colors flex items-center justify-center gap-2 bg-white"
+            >
+              <FiUpload className="w-5 h-5 text-gray-400" />
+              <span className="text-sm font-medium text-gray-700">
+                {uploading ? 'Uploading...' : uploadedImageUrl ? '✓ Image uploaded' : 'Upload image to search'}
+              </span>
+            </button>
+            {uploadedImageUrl && (
+              <div className="mt-2 relative">
+                <img
+                  src={uploadedImageUrl}
+                  alt="Uploaded"
+                  className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                />
+                <button
+                  onClick={() => setUploadedImageUrl('')}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <FiX className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <input
@@ -326,8 +453,11 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about products, search by image, or place an order..."
-              disabled={isLoading}
+              placeholder={
+                searchMode === 'semantic' ? 'Describe what you\'re looking for...' :
+                'Paste image URL or upload above...'
+              }
+              disabled={isLoading || uploading}
               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -339,23 +469,126 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
           
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
-            className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 font-medium"
+            disabled={(searchMode === 'semantic' && !input.trim()) || (searchMode === 'image' && !uploadedImageUrl && !input.trim()) || isLoading || uploading}
+            className={`px-6 py-3 text-white rounded-xl disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 font-medium ${
+              searchMode === 'semantic' ? 'bg-green-500 hover:bg-green-600' :
+              'bg-purple-500 hover:bg-purple-600'
+            }`}
           >
             {isLoading ? (
               <FiLoader className="w-4 h-4 animate-spin" />
+            ) : searchMode === 'image' ? (
+              <FiSearch className="w-4 h-4" />
             ) : (
               <FiSend className="w-4 h-4" />
             )}
-            Send
+            {searchMode === 'image' ? 'Search' : 'Send'}
           </button>
         </div>
 
         <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-          <span>Press Enter to send, Shift + Enter for new line</span>
-          <span>{chatMode === 'specific' ? 'Specific docs' : 'All docs'} mode</span>
+          <span>
+            {searchMode === 'semantic' ? 'AI-powered semantic search' :
+             'Search by visual similarity'}
+          </span>
+          <span className={`font-medium ${
+            searchMode === 'semantic' ? 'text-green-600' :
+            'text-purple-600'
+          }`}>
+            {searchMode.charAt(0).toUpperCase() + searchMode.slice(1)} Mode
+          </span>
         </div>
       </div>
     </div>
+
+    {/* Product Detail Modal */}
+    {selectedProduct && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={() => setSelectedProduct(null)}
+      >
+        <div 
+          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center rounded-t-2xl">
+            <h2 className="text-xl font-bold text-gray-900">Product Details</h2>
+            <button
+              onClick={() => setSelectedProduct(null)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiX className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6">
+            {/* Product Image */}
+            {selectedProduct.imageUrl && (
+              <div className="mb-6">
+                <img
+                  src={selectedProduct.imageUrl}
+                  alt={selectedProduct.name}
+                  className="w-full h-80 object-cover rounded-xl shadow-md"
+                  onError={(e) => {
+                    console.error('Failed to load image:', selectedProduct.imageUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Product Info */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedProduct.name}</h3>
+                <div className="flex items-center gap-4 mb-4">
+                  <span className="text-3xl font-bold text-blue-600">${selectedProduct.price}</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedProduct.stock > 0 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedProduct.stock > 0 ? `${selectedProduct.stock} in stock` : 'Out of stock'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                <p className="text-gray-700 leading-relaxed">{selectedProduct.description}</p>
+              </div>
+
+              {selectedProduct.category && (
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Category</h4>
+                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium capitalize">
+                    {selectedProduct.category}
+                  </span>
+                </div>
+              )}
+
+              <div className="border-t border-gray-200 pt-4 flex gap-3">
+                <button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  disabled={selectedProduct.stock === 0}
+                >
+                  <FiMessageCircle className="w-5 h-5" />
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-xl transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

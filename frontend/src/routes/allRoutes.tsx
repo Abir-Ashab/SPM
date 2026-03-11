@@ -8,6 +8,7 @@ import ProtectedRoute from '../components/auth/protectedRoute';
 import Dashboard from '../components/dashboard/Dashboard';
 import ChatPage from '../components/chat/ChatPage';
 import ProductsPage from '../components/products/ProductsPage';
+import CreateProductPage from '../components/products/CreateProductPage';
 import OrdersPage from '../components/orders/OrdersPage';
 import { Navigate } from 'react-router-dom';
 const HomeRoute = () => {
@@ -57,6 +58,14 @@ export default function AllRoutes() {
           element={
             <ProtectedRoute>
               <ProductsPage/>
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/products/create" 
+          element={
+            <ProtectedRoute>
+              <CreateProductPage/>
             </ProtectedRoute>
           }
         />
