@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@types/react-toastify": "^4.0.2",
+    "axios": "^1.11.0",
+    "react-toastify": "^11.0.5"
+  }
+}

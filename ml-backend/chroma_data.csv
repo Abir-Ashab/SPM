@@ -1,0 +1,105 @@
+id,text,metadata
+c0c9a1f2-7975-44e7-903d-bc54af5e3a05,"Proposal  Form  
+ 
+Core  Features  
+Feature-1:  Interns’  AI-Assisted  Learning  &  Evaluation  ●  I...","{'page_label': '1', 'page': 0, 'total_pages': 7, 'producer': 'Skia/PDF m140 Google Docs Renderer', 'creator': 'PyPDF', 'creationdate': '', 'title': 'Proposal Form', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf'}"
+d85d3505-60a1-43e4-8459-1562e339fc32,"model
+ 
+will
+ 
+compute
+ 
+the
+ 
+duration
+ 
+of
+ 
+an
+ 
+intern
+ 
+engagement
+ 
+in
+ 
+a
+ 
+meeting
+ 
+and
+ 
+g...","{'page': 0, 'creationdate': '', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'page_label': '1', 'creator': 'PyPDF', 'total_pages': 7, 'title': 'Proposal Form'}"
+77c0dd77-8607-4679-9087-d89fb6e90117,Workflow,"{'total_pages': 7, 'creationdate': '', 'page': 1, 'creator': 'PyPDF', 'page_label': '2', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'title': 'Proposal Form', 'producer': 'Skia/PDF m140 Google Docs Renderer'}"
+d53eeffc-b760-4371-b2a6-894843883d29,"Tools  &  Technologies  
+ Area  Technology  
+Frontend  React  
+Backend  Express.js  
+Database  (Rela...","{'total_pages': 7, 'page': 3, 'title': 'Proposal Form', 'creationdate': '', 'creator': 'PyPDF', 'page_label': '4', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'producer': 'Skia/PDF m140 Google Docs Renderer'}"
+55d6a82e-b74e-4484-b8ce-0ca3992e1cca,"File  Upload  Multer  (Node.js  middleware  for  handling  file  uploads)  
+PDF  Reading  pdf-parse ...","{'total_pages': 7, 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'page_label': '5', 'page': 4, 'creationdate': '', 'creator': 'PyPDF', 'title': 'Proposal Form', 'producer': 'Skia/PDF m140 Google Docs Renderer'}"
+32ab5c4d-de8e-4729-8156-51905f177f03,"Email  Sending  Nodemailer  +  Gmail  SMTP  (free  for  basic  email  alerts  and  notifications)  
+...","{'page': 4, 'creationdate': '', 'total_pages': 7, 'page_label': '5', 'creator': 'PyPDF', 'title': 'Proposal Form', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'producer': 'Skia/PDF m140 Google Docs Renderer'}"
+a8462086-2717-4a77-9c29-3d5ca0eb658c,●  File  Upload:  Multer  integration  for  PDF/text/URL  submissions.  ●  Fallback:  Use  SQLite  i...,"{'page': 5, 'total_pages': 7, 'creationdate': '', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'page_label': '6', 'creator': 'PyPDF', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'title': 'Proposal Form'}"
+68fd574a-1a4e-49b9-85d5-e68238931203,lip-sync  detection.  ●  DB  Integration:  Store  metrics  in  PostgreSQL.  ●  Fallback:  Manual  vi...,"{'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'total_pages': 7, 'producer': 'Skia/PDF m140 Google Docs Renderer', 'creationdate': '', 'creator': 'PyPDF', 'page': 5, 'title': 'Proposal Form', 'page_label': '6'}"
+b2f1a448-c028-4030-950c-7ff4c57dbe29,"Task  Division  :   Role        Responsibilities  
+Frontend  React  UI,  Chart.js,  Firebase  Auth  ...","{'title': 'Proposal Form', 'page': 6, 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063278464-358248895.pdf', 'creationdate': '', 'page_label': '7', 'total_pages': 7, 'producer': 'Skia/PDF m140 Google Docs Renderer', 'creator': 'PyPDF'}"
+da2876d5-4295-46cf-afc4-c2cf3c11291f,Evolution  of  Internship              -  Md  Farhan  Islam  Shuvro                              Tra...,"{'creationdate': '', 'creator': 'PyPDF', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'page': 0, 'page_label': '1', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'total_pages': 5, 'title': 'Self-Assesment'}"
+bf5407ba-cf07-45ea-9aa5-0993feba7430,"typescript
+ 
+.
+ We  used  roadmap.sh to  learn  javascript.  After  gaining  the  fundamental  javas...","{'title': 'Self-Assesment', 'creator': 'PyPDF', 'total_pages': 5, 'page_label': '1', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'page': 0, 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'creationdate': ''}"
+11dffadb-825c-463f-a27b-c73c3649bba8,"Later  on  We  learnt  Nodejs  ,  expressjs  from  the  roadmap.sh  
+Next
+ 
+1.5
+ 
+Months:
+ After  ga...","{'total_pages': 5, 'title': 'Self-Assesment', 'page_label': '2', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'page': 1, 'creator': 'PyPDF', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'creationdate': ''}"
+5bd38d46-5499-4ff7-8073-f053bd989bca,"became
+ 
+clearer.
+  
+For
+ 
+design
+ 
+phase:
+ 
+Execution
+ 
+Flow:
+ I  studied  various  backend  archit...","{'creationdate': '', 'page_label': '2', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'page': 1, 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'creator': 'PyPDF', 'total_pages': 5, 'title': 'Self-Assesment'}"
+1ec6cf9b-097c-4c86-aa8e-44e5adba2fee,"This  layered  approach  ensures  separation  of  concerns,  scalability,  and  
+maintainability
+ 
+i...","{'creator': 'PyPDF', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'page': 2, 'total_pages': 5, 'creationdate': '', 'page_label': '3', 'title': 'Self-Assesment'}"
+b98a3014-e23b-4ac1-8447-b2d5869de65b,"DBDiagram  for  precision  (auto-PK/FK,  SQL  export)  and  Lucidchart  for  collaborative  
+editing...","{'creationdate': '', 'page': 3, 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'page_label': '4', 'title': 'Self-Assesment', 'creator': 'PyPDF', 'total_pages': 5, 'producer': 'Skia/PDF m140 Google Docs Renderer'}"
+958913bb-dfd7-435b-9025-1988dcbadcd2,"helpful
+ 
+for
+ 
+modifying
+ 
+database
+ 
+tables
+ 
+during
+ 
+development.
+ 
+We
+ 
+used
+ 
+postgresql
+ 
+as
+...","{'creationdate': '', 'creator': 'PyPDF', 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'title': 'Self-Assesment', 'page': 3, 'page_label': '4', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'total_pages': 5}"
+16e3977e-8a87-4cba-8eca-cf8ba59eb44f,While  developing  the  frontend  there  was  a  time  when  my  progress  was  very  slow.  At  tha...,"{'creationdate': '', 'total_pages': 5, 'title': 'Self-Assesment', 'creator': 'PyPDF', 'page_label': '5', 'page': 4, 'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'producer': 'Skia/PDF m140 Google Docs Renderer'}"
+253ca5f9-8fab-4833-ba04-c993743b0392,"I  also  realized  the  importance  of  questioning  'why'—whether  it’s  about  
+requirements,
+ 
+co...","{'source': 'D:\\Hackathon\\Intern-Onboarding-Assistant\\backend\\uploads\\1754063526086-929236355.pdf', 'title': 'Self-Assesment', 'total_pages': 5, 'page_label': '5', 'producer': 'Skia/PDF m140 Google Docs Renderer', 'creator': 'PyPDF', 'creationdate': '', 'page': 4}"

@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - hackathon-net
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - hackathon-net
+    depends_on:
+      - mongodb
+      - minio
+
+  ml-backend:
+    build: ./ml-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - hackathon-net
+
+  mongodb:
+    image: mongo:latest
+    container_name: intern-onboarding-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: intern-onboarding
+    volumes:
+      - mongodb-data:/data/db
+    restart: unless-stopped
+    networks:
+      - hackathon-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: docmind-minio
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    environment:
+      MINIO_ROOT_USER: cefalo
+      MINIO_ROOT_PASSWORD: iit12345
+    volumes:
+      - ./backend/minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - hackathon-net
+
+volumes:
+  mongodb-data:
+
+networks:
+  hackathon-net:
+    driver: bridge
