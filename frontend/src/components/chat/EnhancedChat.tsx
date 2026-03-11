@@ -326,7 +326,7 @@ export default function EnhancedChat({ selectedDocuments = [], className = "" }:
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask a question about your documents..."
+              placeholder="Ask about products, search by image, or place an order..."
               disabled={isLoading}
               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             />

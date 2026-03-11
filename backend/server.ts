@@ -8,6 +8,7 @@ import { AuthRoutes } from "./src/routes/auth.route";
 import productRoutes from "./src/routes/product.route";
 import chatbotRoutes from "./src/routes/chatbot.route";
 import orderRoutes from "./src/routes/order.route";
+import dashboardRoutes from "./src/routes/dashboard.route";
 import { MinIOService } from "./src/services/minio.service";
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -33,6 +34,7 @@ const startServer = async () => {
     app.use("/api/products", productRoutes);
     app.use("/api/chatbot", chatbotRoutes);
     app.use("/api/orders", orderRoutes);
+    app.use("/api/dashboard", dashboardRoutes);
     app.get('/api/health', (req, res) => {
       res.json({ status: 'ok', message: 'Product Chatbot API is running' });
     });

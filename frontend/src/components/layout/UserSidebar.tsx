@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
-  FiX, FiUser, FiLogOut, FiEdit3, FiUpload, FiFolder
+  FiX, FiUser, FiLogOut, FiEdit3, FiShoppingBag, FiPackage
 } from "react-icons/fi";
 
 interface UserSidebarProps {
@@ -105,30 +105,30 @@ export default function UserSidebar({ user, isOpen, onClose }: UserSidebarProps)
             </Link>
 
             <Link
-              to="/upload"
+              to="/products"
               onClick={onClose}
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors duration-200 group"
             >
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors duration-200">
-                <FiUpload className="w-5 h-5 text-green-600" />
+                <FiShoppingBag className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <div className="font-medium text-slate-900">Upload Documents</div>
-                <div className="text-sm text-slate-600">Upload your files</div>
+                <div className="font-medium text-slate-900">Browse Products</div>
+                <div className="text-sm text-slate-600">Explore our catalog</div>
               </div>
             </Link>
 
             <Link
-              to="/documents"
+              to="/orders"
               onClick={onClose}
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors duration-200 group"
             >
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
-                <FiFolder className="w-5 h-5 text-orange-600" />
+                <FiPackage className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <div className="font-medium text-slate-900">My Documents</div>
-                <div className="text-sm text-slate-600">View your documents</div>
+                <div className="font-medium text-slate-900">My Orders</div>
+                <div className="text-sm text-slate-600">Track your orders</div>
               </div>
             </Link>
           </div>

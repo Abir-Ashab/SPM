@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { FiFileText, FiShield, FiUpload, FiUsers, FiLogIn, FiStar, FiTrendingUp, FiGlobe } from 'react-icons/fi'
+import { FiShoppingBag, FiShield, FiMessageSquare, FiImage, FiLogIn, FiStar, FiTrendingUp, FiZap } from 'react-icons/fi'
 import { useState, useEffect } from 'react'
 
 export default function FrontPage() {
@@ -28,10 +28,10 @@ export default function FrontPage() {
           <div className="flex justify-between h-20">
             <div className="flex items-center group">
               <div className="relative">
-                <FiFileText className="h-10 w-10 text-blue-600 transform group-hover:scale-110 transition-transform duration-500" />
+                <FiShoppingBag className="h-10 w-10 text-blue-600 transform group-hover:scale-110 transition-transform duration-500" />
               </div>
               <span className="ml-3 text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                DocuMind
+                ShopBot
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -59,24 +59,24 @@ export default function FrontPage() {
           <div className="mb-8">
             <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-slate-200/50 mb-8 shadow-lg">
               <FiStar className="w-4 h-4 mr-2 text-yellow-500" />
-              <span className="text-sm text-slate-700 font-medium">Trusted by Professionals</span>
+              <span className="text-sm text-slate-700 font-medium">AI-Powered Shopping Assistant</span>
             </div>
           </div>
           
           <h1 className="text-6xl md:text-7xl font-bold text-slate-900 mb-8 leading-tight">
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              DocuMind
+              ShopBot
             </span>
             <br />
             <span className="text-slate-900">
-              Intelligence
+              Smart Shopping
             </span>
           </h1>
           
           <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Transform your documents with AI-powered chat and intelligent insights. 
-            <span className="text-blue-600 font-semibold"> Ask questions, get answers </span>
-            from your documents instantly with advanced natural language processing.
+            Shop smarter with AI-powered conversations and visual search. 
+            <span className="text-blue-600 font-semibold"> Chat naturally, find products instantly, </span>
+            and place orders through intelligent conversations.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-6 mb-16">
@@ -100,9 +100,9 @@ export default function FrontPage() {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {[
-              { number: "10K+", label: "Documents Processed" },
-              { number: "99.9%", label: "AI Accuracy Rate" },
-              { number: "24/7", label: "Smart Assistant" }
+              { number: "500+", label: "Products Available" },
+              { number: "98%", label: "Match Accuracy" },
+              { number: "24/7", label: "AI Shopping Assistant" }
             ].map((stat, index) => (
               <div key={index} className="text-center group">
                 <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform duration-300">
@@ -120,31 +120,31 @@ export default function FrontPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-5xl font-bold mb-6 text-slate-900">
-              Why Choose DocuMind?
+              Why Choose ShopBot?
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Transform your documents with AI-powered intelligence and instant insights
+              Experience the future of online shopping with AI-powered conversations and visual search
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                icon: <FiShield className="h-12 w-12" />,
-                title: "AI-Powered Chat",
-                description: "Ask questions and get instant answers from your documents using advanced natural language processing and machine learning.",
+                icon: <FiMessageSquare className="h-12 w-12" />,
+                title: "Natural Conversations",
+                description: "Chat naturally with our AI to find products, ask questions, and place orders. Our chatbot understands your intent and preferences.",
                 color: "from-blue-500 to-indigo-500"
               },
               {
-                icon: <FiUsers className="h-12 w-12" />,
-                title: "Smart Insights",
-                description: "Discover patterns, extract key information, and gain intelligent insights from your document collection automatically.",
+                icon: <FiImage className="h-12 w-12" />,
+                title: "Visual Product Search",
+                description: "Upload product images and find similar items instantly. Our AI analyzes images and matches them with our catalog using advanced vision technology.",
                 color: "from-indigo-500 to-purple-500"
               },
               {
-                icon: <FiUpload className="h-12 w-12" />,
-                title: "Instant Processing",
-                description: "Upload any document and start chatting immediately. Our AI processes and understands your content in seconds.",
+                icon: <FiZap className="h-12 w-12" />,
+                title: "Smart Ordering",
+                description: "Place orders through conversation. Our AI extracts product details, quantities, and preferences from your messages automatically.",
                 color: "from-purple-500 to-pink-500"
               }
             ].map((feature, index) => (
@@ -175,18 +175,18 @@ export default function FrontPage() {
       <div className="relative py-32 bg-gradient-to-br from-blue-600 to-indigo-700">
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <FiGlobe className="w-20 h-20 mx-auto mb-8 text-blue-200 animate-spin" style={{ animationDuration: '20s' }} />
+          <FiShoppingBag className="w-20 h-20 mx-auto mb-8 text-blue-200 animate-bounce" style={{ animationDuration: '3s' }} />
           <h2 className="text-5xl font-bold mb-6 text-white">
-            Ready to Transform Your Documents?
+            Ready to Shop Smarter?
           </h2>
           <p className="text-xl text-blue-100 mb-12 leading-relaxed">
-            Join thousands of professionals who trust DocuMind for intelligent document analysis and AI-powered insights every day.
+            Join shoppers who experience the future of e-commerce with AI-powered conversations, visual search, and instant ordering.
           </p>
           <button
             onClick={() => navigate('/register')}
             className="px-12 py-6 bg-white text-blue-600 rounded-full hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 text-xl font-bold shadow-2xl hover:shadow-white/20"
           >
-            Start Your Free Trial Today
+            Start Shopping with AI Today
           </button>
         </div>
       </div>
