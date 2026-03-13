@@ -15,7 +15,7 @@ An intelligent e-commerce platform featuring AI-powered semantic product search 
 
 - **Node.js** v18+ and npm
 - **Python** 3.13 (recommended) or 3.11+
-- **MongoDB** installed and running locally or accessible via connection string
+- **Docker Desktop** (or Docker Engine + Docker Compose)
 - **Google Gemini API Key** (free tier available at [ai.google.dev](https://ai.google.dev))
 
 ## 🛠️ Installation & Setup
@@ -34,17 +34,22 @@ npm install
 
 Create `.env` file in `backend/` directory:
 ```env
+NODE_ENV=development
 PORT=3000
-MONGODB_URI=mongodb://localhost:27017/spm
-JWT_SECRET=your_secure_jwt_secret_here
-ML_BACKEND_URL=http://localhost:8000
+MONGODB_URI=mongodb://localhost:27017/intern-onboarding
+JWT_ACCESS_SECRET=your-secret-access-key
+JWT_ACCESS_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=your-secret-refresh-key
+JWT_REFRESH_EXPIRES_IN=30d
+BCRYPT_SALT_ROUNDS=12
 
-# MinIO Configuration (optional - for advanced file storage)
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=products
+# MinIO Configuration
+MINIO_ENDPOINT=127.0.0.1
+MINIO_PORT=9002
+MINIO_USE_SSL=false
+MINIO_ACCESS_KEY=cefalo
+MINIO_SECRET_KEY=iit12345
+MINIO_BUCKET_NAME=cefalo-hackathon
 ```
 
 ### 3. ML Backend Setup (Python/FastAPI)
@@ -91,10 +96,19 @@ This will:
 
 **Important:** Start services in separate terminal windows in this order:
 
-### Terminal 1: Start MongoDB
+### Terminal 1: Start Docker Services (MongoDB + MinIO)
 ```bash
-# If MongoDB is not running as a service
-mongod
+docker compose up -d mongodb minio
+```
+
+Verify containers are running:
+```bash
+docker compose ps
+```
+
+Optional: Start everything in Docker (frontend + backend + ml-backend too):
+```bash
+docker compose up -d
 ```
 
 ### Terminal 2: Start ML Backend (Port 8000)
@@ -108,7 +122,7 @@ Wait for: `Application startup complete` and `Uvicorn running on http://0.0.0.0:
 ### Terminal 3: Start Node Backend (Port 3000)
 ```bash
 cd backend
-npm run dev
+npm start
 ```
 
 Wait for: `Application initialized successfully` and `Server is running on port 3000`
@@ -214,38 +228,10 @@ Open browser to: **http://localhost:5173**
 - Served statically by Express at `/uploads/products/:filename`
 - Image URLs stored in MongoDB as full URLs (e.g., `http://localhost:3000/uploads/products/camera.jpg`)
 
-## 🐛 Troubleshooting
-
-### MongoDB Connection Error
-```bash
-# Start MongoDB service
-sudo systemctl start mongod  # Linux
-brew services start mongodb-community  # macOS
-# Or run mongod directly in a terminal
-```
-
-### ML Backend Crashes on Startup
-- Ensure Python 3.13 or 3.11+ is installed
-- Verify GEMINI_API_KEY is set in `ml-backend/.env`
-- Check that port 8000 is not in use
-
-### Products Not Appearing in Search
-- Run `npm run seed` in backend directory to reindex products
-- Check that ML backend is running and responding at http://localhost:8000/health
-
-### Images Not Displaying
-- Verify `uploads/products/` folder exists at workspace root
-- Check that backend server is serving static files from correct path
-- Ensure image URLs in database match actual file locations
-
-### Frontend Can't Connect to Backend
-- Verify backend is running on port 3000
-- Check browser console for CORS errors
-- Ensure API base URL in `frontend/src/services/api.ts` is correct
-
 ## 📝 Notes
 
 - **Image Search Feature:** Currently disabled as Gemini Vision API is not available in free tier
 - **Python Version:** Optimized for Python 3.13 using ONNX Runtime instead of PyTorch for stability
 - **Similarity Threshold:** Products with similarity score < 0.3 are filtered out
 - **Embeddings:** Using ONNX MiniLM-L6-v2 model (lightweight and fast)
+- **Database Runtime:** MongoDB runs in Docker via `docker-compose.yml`
