@@ -61,9 +61,9 @@ export const productService = {
   },
 
   // Semantic search (AI-powered)
-  semanticSearch: async (query: string, topK: number = 5): Promise<Product[]> => {
+  semanticSearch: async (query: string, topK: number = 5): Promise<{ products: Product[]; response: string }> => {
     const response = await api.post('/products/search/semantic', { query, topK });
-    return response.data.data;
+    return { products: response.data.data, response: response.data.response || '' };
   },
 
   // Image search

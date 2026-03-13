@@ -1,12 +1,14 @@
-import axios from 'axios';
-import { Product } from '../models/product.model';
-import { IProduct } from '../models/product.model';
+import axios from "axios";
+import { Product } from "../models/product.model";
+import { IProduct } from "../models/product.model";
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 
 export class ProductService {
   // Create a new product
-  static async createProduct(productData: Partial<IProduct>): Promise<IProduct> {
+  static async createProduct(
+    productData: Partial<IProduct>,
+  ): Promise<IProduct> {
     const product = await Product.create(productData);
 
     // Index in ML backend for semantic search
@@ -21,7 +23,7 @@ export class ProductService {
         metadata: product.metadata,
       });
     } catch (error) {
-      console.error('Failed to index product in ML backend:', error);
+      console.error("Failed to index product in ML backend:", error);
     }
 
     return product;
@@ -50,8 +52,13 @@ export class ProductService {
   }
 
   // Update product
-  static async updateProduct(productId: string, updates: Partial<IProduct>): Promise<IProduct | null> {
-    const product = await Product.findByIdAndUpdate(productId, updates, { new: true });
+  static async updateProduct(
+    productId: string,
+    updates: Partial<IProduct>,
+  ): Promise<IProduct | null> {
+    const product = await Product.findByIdAndUpdate(productId, updates, {
+      new: true,
+    });
 
     // Re-index in ML backend
     if (product) {
@@ -66,7 +73,7 @@ export class ProductService {
           metadata: product.metadata,
         });
       } catch (error) {
-        console.error('Failed to re-index product in ML backend:', error);
+        console.error("Failed to re-index product in ML backend:", error);
       }
     }
 
@@ -85,16 +92,35 @@ export class ProductService {
   }
 
   // Semantic search using ML backend
-  static async semanticSearch(query: string, topK: number = 5): Promise<any[]> {
+  static async semanticSearch(
+    query: string,
+    topK: number = 5,
+  ): Promise<{ products: any[]; response: string }> {
     try {
-      const response = await axios.post(`${ML_SERVICE_URL}/search/semantic`, {
+      const res = await axios.post(`${ML_SERVICE_URL}/search/semantic`, {
         query,
         topK,
       });
-      return response.data.products;
+
+      // Transform ML backend response to match Product interface (_id instead of id)
+      const products = res.data.products.map((p: any) => ({
+        _id: p.id,
+        name: p.name,
+        description: p.description,
+        category: p.category,
+        price: p.price,
+        stock:
+          typeof p.stock === "string" ? parseInt(p.stock, 10) : p.stock || 0,
+        imageUrl: p.imageUrl,
+      }));
+
+      return {
+        products,
+        response: res.data.response || "",
+      };
     } catch (error) {
-      console.error('Semantic search failed:', error);
-      throw new Error('Semantic search failed');
+      console.error("Semantic search failed:", error);
+      throw new Error("Semantic search failed");
     }
   }
 
@@ -107,21 +133,22 @@ export class ProductService {
       });
       return response.data.products;
     } catch (error) {
-      console.error('Image search failed:', error);
-      throw new Error('Image search failed');
+      console.error("Image search failed:", error);
+      throw new Error("Image search failed");
     }
   }
 
   // Batch index products
   static async batchIndexProducts(): Promise<void> {
     const products = await Product.find();
-    
-    const productData = products.map(p => ({
+
+    const productData = products.map((p) => ({
       id: (p._id as any).toString(),
       name: p.name,
       description: p.description,
       category: p.category,
       price: p.price,
+      stock: p.stock,
       imageUrl: p.imageUrl,
       metadata: p.metadata,
     }));
@@ -130,8 +157,8 @@ export class ProductService {
       await axios.post(`${ML_SERVICE_URL}/products/index_batch`, productData);
       console.log(`Indexed ${products.length} products`);
     } catch (error) {
-      console.error('Batch indexing failed:', error);
-      throw new Error('Batch indexing failed');
+      console.error("Batch indexing failed:", error);
+      throw new Error("Batch indexing failed");
     }
   }
 }

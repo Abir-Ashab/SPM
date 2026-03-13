@@ -30,6 +30,7 @@ cd SPM
 ```bash
 cd backend
 npm install
+npm start
 ```
 
 Create `.env` file in `backend/` directory:
@@ -57,6 +58,7 @@ MINIO_BUCKET_NAME=cefalo-hackathon
 ```bash
 cd ml-backend
 pip install -r requirements.txt
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 Create `.env` file in `ml-backend/` directory:
@@ -114,7 +116,7 @@ docker compose up -d
 ### Terminal 2: Start ML Backend (Port 8000)
 ```bash
 cd ml-backend
-python main.py
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 Wait for: `Application startup complete` and `Uvicorn running on http://0.0.0.0:8000`

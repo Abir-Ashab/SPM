@@ -69,6 +69,7 @@ class Product(BaseModel):
     description: str
     category: str
     price: float
+    stock: Optional[int] = None
     imageUrl: Optional[str] = None
     metadata: Optional[Dict] = {}
 
@@ -105,7 +106,7 @@ def encode_image_to_base64(image_url: str) -> str:
 def extract_intent_and_entities(message: str, image_urls: List[str] = None) -> Dict:
     """Use Gemini to extract intent and entities from customer message."""
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-flash-lite-latest')
         
         prompt = f"""
 Analyze the following customer message and extract:
@@ -164,17 +165,32 @@ def semantic_product_search(query: str, top_k: int = 5) -> List[Dict]:
                 distance = results['distances'][0][i] if results['distances'] else 1.0
                 similarity_score = float(1 - distance)
                 
-                # Log for debugging
-                logger.info(f"Product: {metadata.get('name')}, Distance: {distance:.4f}, Similarity: {similarity_score:.4f}")
+                # Extract and properly type metadata
+                product_id = metadata.get("product_id")
+                name = metadata.get("name")
+                category = metadata.get("category")
+                price = metadata.get("price")
+                image_url = metadata.get("imageUrl") or ""
+                stock_val = metadata.get("stock")
+                
+                # Convert stock to int (ChroamDB stores as string)
+                try:
+                    stock = int(float(stock_val)) if stock_val else 0
+                except (ValueError, TypeError):
+                    stock = 0
+                
+                logger.info(f"Product: {name}, Stock: {stock}, ImageUrl: {image_url}, Similarity: {similarity_score:.4f}")
                 
                 # Only include products with reasonable similarity (threshold: 0.3)
                 if similarity_score > 0.3:
                     products.append({
-                        "id": metadata.get("product_id"),
-                        "name": metadata.get("name"),
+                        "id": product_id,
+                        "name": name,
                         "description": document,
-                        "category": metadata.get("category"),
-                        "price": metadata.get("price"),
+                        "category": category,
+                        "price": float(price) if price else 0,
+                        "imageUrl": image_url,
+                        "stock": stock,
                         "similarity_score": similarity_score
                     })
         
@@ -189,7 +205,7 @@ def semantic_product_search(query: str, top_k: int = 5) -> List[Dict]:
 def image_based_search(image_url: str, top_k: int = 5) -> List[Dict]:
     """Search products using image similarity with Gemini vision."""
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-flash-lite-latest')
         
         # Use Gemini to describe the image
         response = model.generate_content([
@@ -210,39 +226,40 @@ def image_based_search(image_url: str, top_k: int = 5) -> List[Dict]:
 def generate_chatbot_response(message: str, intent_data: Dict, relevant_products: List[Dict]) -> str:
     """Generate natural language response using Gemini."""
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-flash-lite-latest')
         
         if not relevant_products:
-            return "I couldn't find any products matching your search. Could you please provide more details about what you're looking for?"
+            return f"Sorry, I couldn't find any products matching \"{message}\". Try different keywords."
         
         products_info = "\n".join([
-            f"- {p['name']}: {p['description'][:150]}... (${p['price']}) [Relevance: {p.get('similarity_score', 0):.2f}]"
-            for p in relevant_products[:3]
+            f"- Name: {p['name']} | Price: ${p['price']} | Category: {p.get('category', 'N/A')} | Stock: {p.get('stock', 'N/A')} | Relevance: {p.get('similarity_score', 0):.2f}"
+            for p in relevant_products[:5]
         ])
         
         prompt = f"""
-You are a helpful product sales assistant. 
+You are a concise product assistant. The customer asked: "{message}"
 
-Customer searched for: "{message}"
-Intent: {intent_data.get('intent', 'inquiry')}
-
-Found {len(relevant_products)} relevant product(s):
+Available matching products:
 {products_info}
 
-Generate a natural, conversational response that:
-1. Directly answers what the customer asked about
-2. Presents the most relevant products (highest relevance score first)
-3. Briefly describes why these products match their search
-4. Asks if they want more details or want to order
+Rules:
+- Answer ONLY what was asked. If they asked about price, just give the price. If they asked to show products, briefly introduce them.
+- Do NOT repeat the full product description.
+- Do NOT include JSON, markdown tables, or bullet lists of specifications.
+- Be conversational and direct — 1 to 2 sentences maximum.
+- If multiple products match, mention them briefly by name and price only.
+- If they asked about a specific attribute (price, stock, category), answer that specific attribute only.
 
-IMPORTANT: Only mention products that are actually relevant to the customer's query "{message}". 
-Do NOT just list all products - focus on the ones with highest relevance scores.
+Examples:
+  Q: "show me bags" → "We have the Luxury Designer Handbag for $299.99. Click on it to see full details!"
+  Q: "what is the price of the bag?" → "The Luxury Designer Handbag is priced at $299.99."
+  Q: "is the camera in stock?" → "Yes, the Professional DSLR Camera has 15 units in stock."
 
-Keep the response concise (2-3 sentences) and helpful.
+Now answer: "{message}"
 """
         
         response = model.generate_content(prompt)
-        return response.text
+        return response.text.strip()
         
     except Exception as e:
         logger.error(f"Response generation failed: {e}")
@@ -273,12 +290,15 @@ async def index_product(product: Product):
         
         # Prepare metadata (ChromaDB requires all values to be strings, ints, floats, or bools)
         metadata = {
-            "product_id": product.id,
-            "name": product.name,
-            "category": product.category,
+            "product_id": str(product.id),
+            "name": str(product.name),
+            "category": str(product.category) if product.category else "",
             "price": float(product.price),
+            "imageUrl": str(product.imageUrl) if product.imageUrl else "",
+            "stock": int(product.stock) if product.stock is not None else 0,
         }
         
+        logger.info(f"Indexing metadata for {product.name}: stock={metadata['stock']}, imageUrl={metadata['imageUrl']}")
         logger.info(f"Adding to ChromaDB collection with ONNX embeddings: {product.name}")
         
         # Add to collection - ONNX embedding function will auto-generate embeddings
@@ -308,10 +328,12 @@ async def index_products_batch(products: List[Product]):
         for product in products:
             doc_content = f"{product.name}. {product.description}"
             metadata = {
-                "product_id": product.id,
-                "name": product.name,
-                "category": product.category,
+                "product_id": str(product.id),
+                "name": str(product.name),
+                "category": str(product.category) if product.category else "",
                 "price": float(product.price),
+                "imageUrl": str(product.imageUrl) if product.imageUrl else "",
+                "stock": int(product.stock) if product.stock is not None else 0,
             }
             documents.append(doc_content)
             metadatas.append(metadata)
@@ -386,7 +408,8 @@ async def semantic_search(request: SemanticSearchRequest):
     """Semantic search endpoint."""
     try:
         products = semantic_product_search(request.query, request.topK)
-        return {"products": products}
+        response_text = generate_chatbot_response(request.query, {"intent": "inquiry"}, products)
+        return {"products": products, "response": response_text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 

@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import { ProductService } from '../services/product.service';
-import { catchAsync } from '../utils/catchAsync.util';
+import { Request, Response } from "express";
+import { ProductService } from "../services/product.service";
+import { catchAsync } from "../utils/catchAsync.util";
 
 export const createProduct = catchAsync(async (req: Request, res: Response) => {
   const product = await ProductService.createProduct(req.body);
@@ -11,38 +11,42 @@ export const createProduct = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const getAllProducts = catchAsync(async (req: Request, res: Response) => {
-  const { category, minPrice, maxPrice } = req.query;
-  
-  const filters: any = {};
-  if (category) filters.category = category;
-  if (minPrice) filters.minPrice = Number(minPrice);
-  if (maxPrice) filters.maxPrice = Number(maxPrice);
+export const getAllProducts = catchAsync(
+  async (req: Request, res: Response) => {
+    const { category, minPrice, maxPrice } = req.query;
 
-  const products = await ProductService.getAllProducts(filters);
+    const filters: any = {};
+    if (category) filters.category = category;
+    if (minPrice) filters.minPrice = Number(minPrice);
+    if (maxPrice) filters.maxPrice = Number(maxPrice);
 
-  res.status(200).json({
-    success: true,
-    count: products.length,
-    data: products,
-  });
-});
+    const products = await ProductService.getAllProducts(filters);
 
-export const getProductById = catchAsync(async (req: Request, res: Response) => {
-  const product = await ProductService.getProductById(req.params.id);
-
-  if (!product) {
-    return res.status(404).json({
-      success: false,
-      message: 'Product not found',
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products,
     });
-  }
+  },
+);
 
-  res.status(200).json({
-    success: true,
-    data: product,
-  });
-});
+export const getProductById = catchAsync(
+  async (req: Request, res: Response) => {
+    const product = await ProductService.getProductById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  },
+);
 
 export const updateProduct = catchAsync(async (req: Request, res: Response) => {
   const product = await ProductService.updateProduct(req.params.id, req.body);
@@ -50,7 +54,7 @@ export const updateProduct = catchAsync(async (req: Request, res: Response) => {
   if (!product) {
     return res.status(404).json({
       success: false,
-      message: 'Product not found',
+      message: "Product not found",
     });
   }
 
@@ -66,52 +70,62 @@ export const deleteProduct = catchAsync(async (req: Request, res: Response) => {
   if (!deleted) {
     return res.status(404).json({
       success: false,
-      message: 'Product not found',
+      message: "Product not found",
     });
   }
 
   res.status(200).json({
     success: true,
-    message: 'Product deleted successfully',
+    message: "Product deleted successfully",
   });
 });
 
-export const searchProducts = catchAsync(async (req: Request, res: Response) => {
-  const { query } = req.query;
+export const searchProducts = catchAsync(
+  async (req: Request, res: Response) => {
+    const { query } = req.query;
 
-  if (!query) {
-    return res.status(400).json({
-      success: false,
-      message: 'Search query is required',
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const products = await ProductService.searchProducts(query as string);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products,
     });
-  }
+  },
+);
 
-  const products = await ProductService.searchProducts(query as string);
+export const semanticSearch = catchAsync(
+  async (req: Request, res: Response) => {
+    const { query, topK } = req.body;
 
-  res.status(200).json({
-    success: true,
-    count: products.length,
-    data: products,
-  });
-});
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
 
-export const semanticSearch = catchAsync(async (req: Request, res: Response) => {
-  const { query, topK } = req.body;
+    const result = await ProductService.semanticSearch(query, topK || 5);
 
-  if (!query) {
-    return res.status(400).json({
-      success: false,
-      message: 'Search query is required',
+    console.log(
+      "Semantic search results:",
+      JSON.stringify(result.products.slice(0, 1), null, 2),
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result.products,
+      response: result.response,
     });
-  }
-
-  const products = await ProductService.semanticSearch(query, topK || 5);
-
-  res.status(200).json({
-    success: true,
-    data: products,
-  });
-});
+  },
+);
 
 export const imageSearch = catchAsync(async (req: Request, res: Response) => {
   const { imageUrl, topK } = req.body;
@@ -119,7 +133,7 @@ export const imageSearch = catchAsync(async (req: Request, res: Response) => {
   if (!imageUrl) {
     return res.status(400).json({
       success: false,
-      message: 'Image URL is required',
+      message: "Image URL is required",
     });
   }
 
@@ -131,11 +145,13 @@ export const imageSearch = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const batchIndexProducts = catchAsync(async (req: Request, res: Response) => {
-  await ProductService.batchIndexProducts();
+export const batchIndexProducts = catchAsync(
+  async (req: Request, res: Response) => {
+    await ProductService.batchIndexProducts();
 
-  res.status(200).json({
-    success: true,
-    message: 'Products indexed successfully',
-  });
-});
+    res.status(200).json({
+      success: true,
+      message: "Products indexed successfully",
+    });
+  },
+);
